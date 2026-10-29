@@ -20,7 +20,7 @@ To get started with the Gemini-Pro Agent, ensure you have Python installed on yo
 1. Clone this repository:
 ```
 git clone https://github.com/Mahir29Flame/SuperGeM.git
-cd smarty-gemini
+cd SuperGeM
 ```
 
 2. Install required Python packages:
