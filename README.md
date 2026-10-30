@@ -1,5 +1,4 @@
 # 🧠SuperGeM
----
 
 ## Introduction
 This is the GitHub repository of Super-GemM, a sophisticated agent designed to meet a wide array of user needs through advanced language understanding and decision-making capabilities. Powered by Google's cutting-edge Gemini 3.5 Flash Lite- Large Language Model (LLM), this agent integrates a suite of special tools to facilitate searches across various platforms including DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, alongside the capability to read and interpret PDF documents. 
