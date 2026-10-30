@@ -55,9 +55,9 @@ def get_agent(api_key: str):
                                    google_api_key=api_key
                                    )
 
-    # tools = load_tools(get_tool_names()) + [ASKPDF(api_key=api_key)]
+    tools = load_tools(get_tool_names())
 
-    return initialize_agent(llm,
+    return initialize_agent(tools, llm,
                             agent="zero-shot-react-description",
                             agent_kwargs={"prefix": load_system_prompt()},
                             verbose=True,
