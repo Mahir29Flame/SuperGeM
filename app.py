@@ -7,7 +7,7 @@ import langchain_google_genai as genai
 from langchain_classic.agents import initialize_agent
 from langchain_community.agent_toolkits.load_tools import load_tools
 
-from READPDF import ASKPDF
+# from READPDF import ASKPDF
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_NAME = "gemini-3.5-flash-lite"
@@ -55,7 +55,7 @@ def get_agent(api_key: str):
                                    google_api_key=api_key
                                    )
 
-    tools = load_tools(get_tool_names()) + [ASKPDF(api_key=api_key)]
+    # tools = load_tools(get_tool_names()) + [ASKPDF(api_key=api_key)]
 
     return initialize_agent(tools, llm,
                             agent="zero-shot-react-description",
