@@ -2,9 +2,10 @@
 ---
 
 ## Introduction
-Welcome to the GitHub repository of Smarty-Gemini Agent, a sophisticated agent designed to meet a wide array of user needs through advanced language understanding and decision-making capabilities. Powered by Google's cutting-edge Gemini-pro Large Language Model (LLM), this agent integrates a suite of special tools to facilitate searches across various platforms including DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, alongside the capability to read and interpret PDF documents. 
+This is the GitHub repository of Super-GemM, a sophisticated agent designed to meet a wide array of user needs through advanced language understanding and decision-making capabilities. Powered by Google's cutting-edge Gemini 3.5 Flash Lite Large Language Model (LLM), this agent integrates a suite of special tools to facilitate searches across various platforms including DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, alongside the capability to read and interpret PDF documents. 
 
 ## Features
+
 - **Advanced Language Understanding**: At its core, the Gemini-Pro Agent leverages Google's Gemini-pro LLM, ensuring a deep comprehension of human language.
 - **Dynamic Tool Selection**: The agent autonomously decides the most suitable tool or response for each query, optimizing user experience.
 - **Versatile Search Options**: With integrated search capabilities across DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, users can find accurate information across the web and academic journals.
@@ -51,12 +52,12 @@ Through the web interface, you can query the agent, request information from int
 
 This will start the web interface, where you can interact with the agent directly.
 
-[Watch the usage video](https://github.com/g-hano/Smarty-Gemini/blob/main/doc/usage60.mp4)
-
 ## How It Works
+
 The Gemini-Pro Agent uses the Langchain library to manage API and LLM calls, enabling it to interpret queries, decide the most appropriate tool or answer, and fetch data from various sources. The agent's decision-making process and language understanding capabilities are powered by Google's Gemini-pro LLM, ensuring high-quality responses.
 
 ## Resources I used in the project
+
 - all html-css codes are belong to [alejandro-ao](https://github.com/alejandro-ao/ask-multiple-pdfs/tree/main)
 
 ## Contributing
