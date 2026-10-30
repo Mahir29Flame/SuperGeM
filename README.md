@@ -12,7 +12,7 @@ Welcome to the GitHub repository of Smarty-Gemini Agent, a sophisticated agent d
 - **Web Interface**: A user-friendly web interface built using the Streamlit library, making it accessible for non-technical users.
 - **Powered by Langchain**: Utilizes the Langchain library for efficient handling of API and LLM calls.
 
-![chart](doc/chart.jpg)
+![chart](assets/chart.jpg)
 
 ## Installation
 To get started with the Gemini-Pro Agent, ensure you have Python installed on your system. Follow these steps to install the required packages:
@@ -33,9 +33,9 @@ pip install -r requirements.txt
 
 3. Set your API keys:
 ```
-set GOOGLE_API_KEY=your-gemini-api-key
+set GEMINI_API_KEY=your-gemini-api-key
 ```
-   `SERPAPI_API_KEY` is optional; without it the Google Scholar tool is disabled. You can get a Gemini key from [Google AI Studio](https://aistudio.google.com/apikey).
+   `GOOGLE_API_KEY` is accepted as a fallback. `SERPAPI_API_KEY` is optional; without it the Google Scholar tool is disabled. You can get a Gemini key from [Google AI Studio](https://aistudio.google.com/apikey).
 
 ## Usage
 After installation, you can utilize the Gemini-Pro Agent through its Streamlit web interface. Follow these steps to start interacting with the agent:

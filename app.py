@@ -8,10 +8,15 @@ from langchain_classic.agents import initialize_agent
 from langchain_community.agent_toolkits.load_tools import load_tools
 
 from READPDF import ASKPDF
-from htmlTemplates import css, bot_template, user_template
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_NAME = "gemini-3.5-flash-lite"
+
+# Bundled locally: Streamlit serves these itself, so no external CDN is needed.
+AVATARS = {
+    "user": str(BASE_DIR / "assets" / "icon" / "user.png"),
+    "assistant": str(BASE_DIR / "assets" / "icon" / "gemini-avatar.png"),
+}
 
 
 def load_system_prompt() -> str:
@@ -38,7 +43,7 @@ def get_tool_names() -> list[str]:
 
 @st.cache_resource(show_spinner="Loading the agent...")
 def get_agent():
-    api_key = os.environ.get("Gemini_API_KEY")
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
         raise RuntimeError(
             "GEMINI_API_KEY is not set. Get a key from "
@@ -70,46 +75,61 @@ def build_agent_input(user_input: str, chat_history: list[dict], max_turns: int 
     return "\n".join(lines)
 
 
+def render_message(role: str, text: str) -> None:
+    with st.chat_message(role, avatar=AVATARS[role]):
+        st.markdown(text)
+
+
 st.set_page_config(page_title="SuperGeM",
-                       page_icon="")
-st.header("SuperGeM")
-st.markdown(css, unsafe_allow_html=True)
+                       page_icon=AVATARS["assistant"])
+st.header(
+    "SuperGeM",
+    text_alignment= "center",
+    icon= ":material/flare:",
+    divider= "violet"
+    )
 
 def main():
-    if "conversation" not in st.session_state:
-        st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    user_input = st.text_input("Chat with Smarty-Gemini")
+    prompt = st.chat_input("Chat with Smarty-Gemini")
 
-    if user_input:
-        try:
-            agent = get_agent()
-        except Exception as e:
-            st.error(str(e))
-        else:
-            agent_input = build_agent_input(user_input, st.session_state.chat_history)
-            st.session_state.chat_history.append({"Human": user_input})
+    for message in st.session_state.chat_history:
+        if "Human" in message:
+            render_message("user", message["Human"])
+        elif "AI" in message:
+            render_message("assistant", message["AI"])
+
+    if prompt:
+        agent_input = build_agent_input(prompt, st.session_state.chat_history)
+        st.session_state.chat_history.append({"Human": prompt})
+        render_message("user", prompt)
+
+        error = None
+        with st.chat_message("assistant", avatar=AVATARS["assistant"]):
             try:
+                agent = get_agent()
                 with st.spinner("Thinking..."):
                     agent_response = agent.invoke({"input": agent_input})
                 answer = agent_response["output"]
             except Exception as e:
-                answer = f"Error: {e}"
-            st.session_state.chat_history.append({"AI": answer})
+                error = str(e)
+                answer = f"Error: {error}"
 
-    for message in st.session_state.chat_history:
-        if "Human" in message:
-            st.markdown(user_template.replace("{{MSG}}", message["Human"]), unsafe_allow_html=True)
-        elif "AI" in message:
-            st.markdown(bot_template.replace("{{MSG}}", message["AI"]), unsafe_allow_html=True)
+            if error:
+                st.error(error)
+            else:
+                st.markdown(answer)
+
+        st.session_state.chat_history.append({"AI": answer})
 
     with st.sidebar:
+        st.markdown("# ℹ️Info")
         # Feature List
         st.markdown("## Features")
         st.markdown("""
-            - **Advanced Language Understanding**: At its core, the Gemini-Pro Agent leverages Google's Gemini-pro LLM, ensuring a deep comprehension of human language.
+            - **Advanced Language Understanding**: At its core, the Gemini leverages Google's Gemini-pro LLM, ensuring a deep comprehension of human language.
             - **Dynamic Tool Selection**: The agent autonomously decides the most suitable tool or response for each query, optimizing user experience.
             - **Versatile Search Options**: With integrated search capabilities across DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, users can find accurate information across the web and academic journals.
             - **PDF Interpretation**: Ability to read and analyze PDF documents, extracting valuable insights and answers.
@@ -119,7 +139,7 @@ def main():
         # Display Linkedin logo and link
         col1, col2 = st.columns([0.5, 4])
         with col1:
-            st.image(str(BASE_DIR / "doc" / "linkedin.png"), width=30)
+            st.image(str(BASE_DIR / "assets" / "linkedin.png"), width=30)
         with col2:
             st.markdown(
                 "[Linkedin](https://www.linkedin.com/in/chanyalcin/)",
@@ -129,22 +149,13 @@ def main():
         # Display Github logo and link
         col1, col2 = st.columns([0.5, 4])
         with col1:
-            st.image(str(BASE_DIR / "doc" / "github-sign.png"), width=30)
+            st.image(str(BASE_DIR / "assets" / "github-sign.png"), width=30)
         with col2:
             st.markdown(
                 "[Github](https://github.com/g-hano)",
                 unsafe_allow_html=True,
             )
 
-        # Display X logo and link
-        col1, col2 = st.columns([0.5, 4])
-        with col1:
-            st.image(str(BASE_DIR / "doc" / "twitter.png"), width=30)
-        with col2:
-            st.markdown(
-                "[X](https://twitter.com/Chan__Ya)",
-                unsafe_allow_html=True,
-            )
 
     # with st.expander("Memory"):
     #     for message in st.session_state.chat_history:

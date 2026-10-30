@@ -25,7 +25,7 @@ css = '''
 bot_template = '''
 <div class="chat-message bot">
     <div class="avatar">
-        <img src="https://github.com/Mahir29Flame/SuperGeM/blob/main/assets/icon/Gemini-Simple.png" style="max-height: 78px; max-width: 78px; border-radius: 50%; object-fit: cover;">
+        <img src="assets/icon/Gemini-Pro.png" style="max-height: 78px; max-width: 78px; border-radius: 50%; object-fit: cover;">
     </div>
     <div class="message">{{MSG}}</div>
 </div>
@@ -34,7 +34,7 @@ bot_template = '''
 user_template = '''
 <div class="chat-message user">
     <div class="avatar">
-        <img src="https://i.imgur.com/14nZ8Ij.png" style="height: 78px; width: 78px; border-radius: 50%; object-fit: cover;">
+        <img src="assets/icon/user.png" style="height: 78px; width: 78px; border-radius: 50%; object-fit: cover;">
     </div>    
     <div class="message">{{MSG}}</div>
 </div>
