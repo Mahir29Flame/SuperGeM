@@ -57,7 +57,7 @@ def get_agent(api_key: str):
 
     # tools = load_tools(get_tool_names()) + [ASKPDF(api_key=api_key)]
 
-    return initialize_agent(tools, llm,
+    return initialize_agent(llm,
                             agent="zero-shot-react-description",
                             agent_kwargs={"prefix": load_system_prompt()},
                             verbose=True,
