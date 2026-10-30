@@ -4,7 +4,7 @@ from PyInstaller.utils.hooks import copy_metadata
 
 datas = [('C:/Users/Asus/Documents/Programming/WebToPC/SuperGeM/app.py', '.'), ('C:/Users/Asus/Documents/Programming/WebToPC/SuperGeM/Gemini', 'Gemini'), ('C:/Users/Asus/Documents/Programming/WebToPC/SuperGeM/assets', 'assets')]
 binaries = []
-hiddenimports = ['READPDF.ASKPDF', 'langchain_classic.agents.initialize_agent', 'langchain_community.agent_toolkits.load_tools.load_tools', 'langchain_google_genai', 'os', 'pathlib.Path', 'streamlit', 'READPDF']
+hiddenimports = ['langchain_classic.agents.initialize_agent', 'langchain_community.agent_toolkits.load_tools.load_tools', 'langchain_google_genai', 'os', 'pathlib.Path', 'streamlit', 'READPDF']
 datas += copy_metadata('streamlit')
 datas += copy_metadata('streamlit')
 datas += copy_metadata('langchain')
@@ -44,7 +44,7 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['C:/Users/Asus/AppData/Local/Temp/tmphycndl0a.py'],
+    ['C:/Users/Asus/AppData/Local/Temp/tmpoju5p1xb.py'],
     pathex=['.', 'C:/Users/Asus/Documents/Programming/WebToPC/SuperGeM'],
     binaries=binaries,
     datas=datas,
