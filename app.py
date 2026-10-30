@@ -51,7 +51,7 @@ def get_agent(api_key: str):
 
     llm = genai.GoogleGenerativeAI(model=MODEL_NAME,
                                    verbose=True,  # to see what the Agent is thinking
-                                   temperature=0,  # less creativity
+                                   temperature=0.3,  # less creativity
                                    google_api_key=api_key
                                    )
 
