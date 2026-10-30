@@ -23,10 +23,19 @@ git clone https://github.com/Mahir29Flame/SuperGeM.git
 cd SuperGeM
 ```
 
-2. Install required Python packages:
+2. Create a virtual environment (Python 3.11 or newer) and install the required packages:
 ```
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
+   With [uv](https://docs.astral.sh/uv/) this is just `uv venv` followed by `uv pip install -r requirements.txt`.
+
+3. Set your API keys:
+```
+set GOOGLE_API_KEY=your-gemini-api-key
+```
+   `SERPAPI_API_KEY` is optional; without it the Google Scholar tool is disabled. You can get a Gemini key from [Google AI Studio](https://aistudio.google.com/apikey).
 
 ## Usage
 After installation, you can utilize the Gemini-Pro Agent through its Streamlit web interface. Follow these steps to start interacting with the agent:

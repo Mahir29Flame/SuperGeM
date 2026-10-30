@@ -1,68 +1,79 @@
-#import asyncio
-#from asyncio import WindowsSelectorEventLoopPolicy
-#asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+import os
+from pathlib import Path
 
 import streamlit as st
+
+import langchain_google_genai as genai
+from langchain_classic.agents import initialize_agent
+from langchain_community.agent_toolkits.load_tools import load_tools
 
 from READPDF import ASKPDF
 from htmlTemplates import css, bot_template, user_template
 
-#? LLM ve Agent
-from langchain.memory import ConversationSummaryBufferMemory
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
-from langchain_core.messages import SystemMessage
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain.agents import initialize_agent, load_tools
-import langchain_google_genai as genai
-#from dotenv import load_dotenv
-import os
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_NAME = "gemini-3.5-flash-lite"
 
-#load_dotenv()
-api_key=os.environ.get("GOOGLE_API_KEY")
-llm = genai.GoogleGenerativeAI(model="gemini-pro",
-                               verbose=True, # to see what the Agent is thinking
-                               temperature=0, # less creativity
-                               google_api_key=api_key
-                               )
 
-# Tools that the Agent can use
-tool_names = ["ddg-search",  # Duckduckgo search for getting current informations
-              "google-scholar", # Google-Scholar search for research papers
-              "wikipedia", # Wikipedia search for general knowledge
-              "arxiv", # Arxiv search for research papers
-              "pubmed"] # Pubmed search for searching medical informations
+def load_system_prompt() -> str:
+    prompt = (BASE_DIR / "Gemini" / "system_prompt.txt").read_text(encoding="utf-8")
+    prompt = prompt.rstrip()
+    # The file is written as a chat transcript, drop the trailing "User:" so it
+    # can be used as the agent prefix.
+    if prompt.endswith("User:"):
+        prompt = prompt[: -len("User:")].rstrip()
+    return prompt
 
-tools = load_tools(tool_names) + [ASKPDF()] # Also adding our custom defined tool
 
-with open("Gemini/system_prompt.txt","r") as f:
-    system_prompt = f.readlines()
-chat_template = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(content=system_prompt),
-                HumanMessagePromptTemplate.from_template("{text}")
-            ]
+def get_tool_names() -> list[str]:
+    # Tools that the Agent can use
+    tool_names = ["ddg-search",  # Duckduckgo search for getting current informations
+                  "wikipedia",  # Wikipedia search for general knowledge
+                  "arxiv",  # Arxiv search for research papers
+                  "pubmed"]  # Pubmed search for searching medical informations
+    if os.environ.get("SERPAPI_API_KEY"):
+        # Google-Scholar search for research papers, needs a SerpAPI key
+        tool_names.append("google-scholar")
+    return tool_names
+
+
+@st.cache_resource(show_spinner="Loading the agent...")
+def get_agent():
+    api_key = os.environ.get("Gemini_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY is not set. Get a key from "
+            "https://aistudio.google.com/apikey and set it before starting the app."
         )
 
-memory = ConversationSummaryBufferMemory(llm=llm)
-agent = initialize_agent(tools, llm, verbose=True, memory=memory, agent="zero-shot-react-description", handle_parsing_errors=True)
+    llm = genai.GoogleGenerativeAI(model=MODEL_NAME,
+                                   verbose=True,  # to see what the Agent is thinking
+                                   temperature=0,  # less creativity
+                                   google_api_key=api_key
+                                   )
 
-#? Update chat_history
-def get_conversation_chain(vectorstore):
-    memory = ConversationBufferMemory(
-        memory_key='chat_history', return_messages=True)
-    
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vectorstore.as_retrieval(),
-        memory=memory
-    )
-    return conversation_chain
+    tools = load_tools(get_tool_names()) + [ASKPDF()]  # Also adding our custom defined tool
 
-st.set_page_config(page_title="Smarty-Gemini",
-                       page_icon="🧠")
-st.header("Smartest Gemini in the World!")
-st.write(css, unsafe_allow_html=True)
+    return initialize_agent(tools, llm,
+                            agent="zero-shot-react-description",
+                            agent_kwargs={"prefix": load_system_prompt()},
+                            verbose=True,
+                            handle_parsing_errors=True)
+
+
+def build_agent_input(user_input: str, chat_history: list[dict], max_turns: int = 5) -> str:
+    """Give the agent the last few messages, it has no memory of its own."""
+    lines = []
+    for message in chat_history[-2 * max_turns:]:
+        for role, text in message.items():
+            lines.append(f"{role}: {text}")
+    lines.append(f"Human: {user_input}")
+    return "\n".join(lines)
+
+
+st.set_page_config(page_title="SuperGeM",
+                       page_icon="")
+st.header("SuperGeM")
+st.markdown(css, unsafe_allow_html=True)
 
 def main():
     if "conversation" not in st.session_state:
@@ -73,12 +84,21 @@ def main():
     user_input = st.text_input("Chat with Smarty-Gemini")
 
     if user_input:
-        st.session_state.chat_history.append({"Human": user_input})    
-        chat_message =  chat_template.format_messages(text=user_input)
-        chat_message_text = "\n".join(["\n".join(msg.content) for msg in chat_message])
-        agent_response = agent.invoke(chat_message_text)
-        st.session_state.chat_history.append({"AI":agent_response["output"]})
-    
+        try:
+            agent = get_agent()
+        except Exception as e:
+            st.error(str(e))
+        else:
+            agent_input = build_agent_input(user_input, st.session_state.chat_history)
+            st.session_state.chat_history.append({"Human": user_input})
+            try:
+                with st.spinner("Thinking..."):
+                    agent_response = agent.invoke({"input": agent_input})
+                answer = agent_response["output"]
+            except Exception as e:
+                answer = f"Error: {e}"
+            st.session_state.chat_history.append({"AI": answer})
+
     for message in st.session_state.chat_history:
         if "Human" in message:
             st.markdown(user_template.replace("{{MSG}}", message["Human"]), unsafe_allow_html=True)
@@ -99,7 +119,7 @@ def main():
         # Display Linkedin logo and link
         col1, col2 = st.columns([0.5, 4])
         with col1:
-            st.image("doc/linkedin.png", width=30)
+            st.image(str(BASE_DIR / "doc" / "linkedin.png"), width=30)
         with col2:
             st.markdown(
                 "[Linkedin](https://www.linkedin.com/in/chanyalcin/)",
@@ -109,7 +129,7 @@ def main():
         # Display Github logo and link
         col1, col2 = st.columns([0.5, 4])
         with col1:
-            st.image("doc/github-sign.png", width=30)
+            st.image(str(BASE_DIR / "doc" / "github-sign.png"), width=30)
         with col2:
             st.markdown(
                 "[Github](https://github.com/g-hano)",
@@ -119,21 +139,21 @@ def main():
         # Display X logo and link
         col1, col2 = st.columns([0.5, 4])
         with col1:
-            st.image(r"doc/twitter.png", width=30)
+            st.image(str(BASE_DIR / "doc" / "twitter.png"), width=30)
         with col2:
             st.markdown(
                 "[X](https://twitter.com/Chan__Ya)",
                 unsafe_allow_html=True,
             )
 
-    with st.expander("Memory"):
-        for message in st.session_state.chat_history:
-            if "Human" in message:
-                st.markdown(f"<span style='color: green;'>Human: {message['Human']}</span>", unsafe_allow_html=True)
-            elif "AI" in message:
-                st.markdown(f"<span style='color: blue;'>AI: {message['AI']}</span>", unsafe_allow_html=True)
-            elif "System" in message:
-                st.write("System: " + message["System"])
-                
+    # with st.expander("Memory"):
+    #     for message in st.session_state.chat_history:
+    #         if "Human" in message:
+    #             st.markdown(f"<span style='color: green;'>Human: {message['Human']}</span>", unsafe_allow_html=True)
+    #         elif "AI" in message:
+    #             st.markdown(f"<span style='color: blue;'>AI: {message['AI']}</span>", unsafe_allow_html=True)
+    #         elif "System" in message:
+    #             st.write("System: " + message["System"])
+
 if __name__ == '__main__':
     main()
