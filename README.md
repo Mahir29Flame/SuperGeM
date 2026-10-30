@@ -32,18 +32,20 @@ pip install -r requirements.txt
 ```
    With [uv](https://docs.astral.sh/uv/) this is just `uv venv` followed by `uv pip install -r requirements.txt`.
 
-3. Set your API keys:
+3. Start the app:
 ```
-set GEMINI_API_KEY=your-gemini-api-key
+streamlit run app.py
 ```
-   `GOOGLE_API_KEY` is accepted as a fallback. `SERPAPI_API_KEY` is optional; without it the Google Scholar tool is disabled. You can get a Gemini key from [Google AI Studio](https://aistudio.google.com/apikey).
+   Enter your Gemini API key in the sidebar when the app starts. The key is kept only in the current Streamlit session. For desktop or automated deployments, `GEMINI_API_KEY` or `GOOGLE_API_KEY` can still be set as a fallback. `SERPAPI_API_KEY` is optional; without it the Google Scholar tool is disabled. You can get a Gemini key from [Google AI Studio](https://aistudio.google.com/apikey).
 
 ## Usage
 After installation, you can utilize the Gemini-Pro Agent through its Streamlit web interface. Follow these steps to start interacting with the agent:
 
-1. **Prepare PDF Files**: Place any PDF files you want the agent to read and interpret in a folder named `Gemini` within the root directory of the project. This ensures the agent can easily access and analyze your documents.
+1. **Enter your API key**: Use the sidebar field, or configure `GEMINI_API_KEY`/`GOOGLE_API_KEY` for a desktop or automated deployment.
 
-2. **Run the Application**: Execute the following command in your terminal to start the web interface:
+2. **Prepare PDF Files**: Place any PDF files you want the agent to read and interpret in a folder named `Gemini` within the root directory of the project. This ensures the agent can easily access and analyze your documents.
+
+3. **Run the Application**: Execute the following command in your terminal to start the web interface:
    ```
    streamlit run app.py
    ```

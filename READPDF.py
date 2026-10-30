@@ -37,10 +37,13 @@ def split_chunks(text):
     return chunks
 
 
-def knowledge_base(chunks):
+def knowledge_base(chunks, api_key: str):
     # task_type is left to the defaults: embed_documents() uses RETRIEVAL_DOCUMENT
     # and embed_query() uses RETRIEVAL_QUERY.
-    embeddings = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL)
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model=EMBEDDING_MODEL,
+        google_api_key=api_key,
+    )
     knowledge = FAISS.from_texts(texts=chunks, embedding=embeddings)
     return knowledge
 
@@ -54,7 +57,7 @@ def _default_pdf() -> str:
 
 
 @lru_cache(maxsize=4)
-def _get_knowledge_base(pdf_path: str) -> FAISS:
+def _get_knowledge_base(pdf_path: str, api_key: str) -> FAISS:
     """Build (and cache) the vector index for a PDF file."""
     path = Path(pdf_path)
     if not path.is_absolute():
@@ -65,11 +68,11 @@ def _get_knowledge_base(pdf_path: str) -> FAISS:
     chunks = split_chunks(extract_text([str(path)]))
     if not chunks:
         raise ValueError(f"No extractable text found in {pdf_path}")
-    return knowledge_base(chunks)
+    return knowledge_base(chunks, api_key)
 
 
-def ask_pdf(pdf_path: str, question: str) -> str:
-    knowledge = _get_knowledge_base(str(pdf_path))
+def ask_pdf(pdf_path: str, question: str, api_key: str) -> str:
+    knowledge = _get_knowledge_base(str(pdf_path), api_key)
     similarity_search = knowledge.similarity_search(question, k=4)
     return "\n\n".join(doc.page_content for doc in similarity_search)
 
@@ -82,6 +85,7 @@ class ASKPDF(BaseTool):
                     Outputs: the passages of the PDF that answer the question."""
 
     verbose: bool = True
+    api_key: str
 
     @staticmethod
     def _parse_input(tool_input, kwargs: dict) -> dict:
@@ -100,7 +104,7 @@ class ASKPDF(BaseTool):
             params = self._parse_input(tool_input, kwargs)
             question = params.get("question") or str(tool_input)
             pdf_path = params.get("pdf_path") or _default_pdf()
-            return ask_pdf(pdf_path, question)
+            return ask_pdf(pdf_path, question, self.api_key)
         except Exception as e:
             # we return the exception in order to warn the Agent
             return f"Error: {e}"
