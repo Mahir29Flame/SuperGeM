@@ -5,7 +5,7 @@
 This is the GitHub repository of Super-GemM, a sophisticated agent designed to meet a wide array of user needs through advanced language understanding and decision-making capabilities. Powered by Google's cutting-edge Gemini 3.5 Flash Lite- Large Language Model (LLM), this agent integrates a suite of special tools to facilitate searches across various platforms including DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, alongside the capability to read and interpret PDF documents. 
 
 Use SuperGeM now!
-at [https://supergem.streamlit.app/](https://supergem.streamlit.app/)
+at https://supergem.streamlit.app/
 
 ## Screenshots
 
@@ -16,12 +16,14 @@ at [https://supergem.streamlit.app/](https://supergem.streamlit.app/)
 
 
 
-## Features
+## Why SuperGeM
 
-- **Advanced Language Understanding**: At its core, the Gemini-Pro Agent leverages Google's Gemini-pro LLM, ensuring a deep comprehension of human language.
+- **Free and OpenSource**
+- **Native Windows Release**
+- **Usable anywhere**: The app is accessible in any device with a browser at https://supergem.streamlit.app/
 - **Dynamic Tool Selection**: The agent autonomously decides the most suitable tool or response for each query, optimizing user experience.
 - **Versatile Search Options**: With integrated search capabilities across DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, users can find accurate information across the web and academic journals.
-- **PDF Interpretation**: Ability to read and analyze PDF documents, extracting valuable insights and answers.
+- **PDF Interpretation**: Ability to read and analyze PDF documents, extracting valuable insights and answers. (upcoming)
 - **Web Interface**: A user-friendly web interface built using the Streamlit library, making it accessible for non-technical users.
 - **Powered by Langchain**: Utilizes the Langchain library for efficient handling of API and LLM calls.
 
