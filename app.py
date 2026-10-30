@@ -42,12 +42,11 @@ def get_tool_names() -> list[str]:
 
 
 @st.cache_resource(show_spinner="Loading the agent...")
-def get_agent():
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+def get_agent(api_key: str):
     if not api_key:
         raise RuntimeError(
-            "GEMINI_API_KEY is not set. Get a key from "
-            "https://aistudio.google.com/apikey and set it before starting the app."
+            "Enter a Gemini API key in the sidebar. Get one from "
+            "https://aistudio.google.com/apikey."
         )
 
     llm = genai.GoogleGenerativeAI(model=MODEL_NAME,
@@ -56,7 +55,7 @@ def get_agent():
                                    google_api_key=api_key
                                    )
 
-    tools = load_tools(get_tool_names()) + [ASKPDF()]  # Also adding our custom defined tool
+    tools = load_tools(get_tool_names()) + [ASKPDF(api_key=api_key)]
 
     return initialize_agent(tools, llm,
                             agent="zero-shot-react-description",
@@ -93,7 +92,22 @@ def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    prompt = st.chat_input("Chat with SuperGeM")
+    with st.sidebar:
+        st.markdown("## API access")
+        api_key = st.text_input(
+            "Gemini API key",
+            type="password",
+            value="",
+            help="Your key is kept in this session and is not written to the app files.",
+        )
+        if not api_key:
+            api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
+        api_key = api_key.strip()
+        st.caption("Get a key from [Google AI Studio](https://aistudio.google.com/apikey).")
+        if not api_key:
+            st.info("Enter a Gemini API key to enable chat.")
+
+    prompt = st.chat_input("Chat with SuperGeM", disabled=not api_key)
 
     for message in st.session_state.chat_history:
         if "Human" in message:
@@ -109,7 +123,7 @@ def main():
         error = None
         with st.chat_message("assistant", avatar=AVATARS["assistant"]):
             try:
-                agent = get_agent()
+                agent = get_agent(api_key)
                 with st.spinner("Thinking..."):
                     agent_response = agent.invoke({"input": agent_input})
                 answer = agent_response["output"]
