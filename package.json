@@ -1,7 +1,7 @@
 {
   "name": "SuperGeM",
   "author": "Mahir29Flame",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Fork of Smarty-Gemini with better UI, Native and newer API support.",
   "main": "./build/electron/main.js",
   "scripts": {
