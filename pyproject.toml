@@ -1,7 +1,7 @@
 
 [project]
 name = "SuperGeM"
-version = "0.5.4"
+version = "0.5.5"
 description = "Fork of Smarty-Gemini with better UI, Native and newer API support."
 readme = "README.md"
 requires-python = ">=3.11"
