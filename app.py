@@ -85,7 +85,7 @@ st.header(
     "SuperGeM",
     text_alignment= "center",
     icon= ":material/flare:",
-    divider= "blue"
+    divider= "blue",
     )
 
 def main():
