@@ -93,7 +93,7 @@ def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    prompt = st.chat_input("Chat with Smarty-Gemini")
+    prompt = st.chat_input("Chat with SuperGeM")
 
     for message in st.session_state.chat_history:
         if "Human" in message:
