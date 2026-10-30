@@ -44,7 +44,7 @@ datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['C:/Users/Asus/AppData/Local/Temp/tmpmbf8sfsl.py'],
+    ['C:/Users/Asus/AppData/Local/Temp/tmphycndl0a.py'],
     pathex=['.', 'C:/Users/Asus/Documents/Programming/WebToPC/SuperGeM'],
     binaries=binaries,
     datas=datas,

@@ -85,7 +85,7 @@ st.header(
     "SuperGeM",
     text_alignment= "center",
     icon= ":material/flare:",
-    divider= "violet"
+    divider= "blue"
     )
 
 def main():
@@ -146,7 +146,6 @@ def main():
             - **Advanced Language Understanding**: At its core, the Gemini leverages Google's Gemini-pro LLM, ensuring a deep comprehension of human language.
             - **Dynamic Tool Selection**: The agent autonomously decides the most suitable tool or response for each query, optimizing user experience.
             - **Versatile Search Options**: With integrated search capabilities across DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, users can find accurate information across the web and academic journals.
-            - **PDF Interpretation**: Ability to read and analyze PDF documents, extracting valuable insights and answers.
             - **Web Interface**: A user-friendly web interface built using the Streamlit library, making it accessible for non-technical users.
             - **Powered by Langchain**: Utilizes the Langchain library for efficient handling of API and LLM calls.
             """)
