@@ -29,27 +29,9 @@ at https://supergem.streamlit.app/
 ![chart](assets/chart.jpg)
 
 ## Installation
-To get started with the Gemini-Pro Agent, ensure you have Python installed on your system. Follow these steps to install the required packages:
+To get started with SuperGeM, ensure you have [Gemini API Key](https://aistudio.google.com/apikey). Use the [Website](https://supergem.streamlit.app/) or install the [Latest Windows Release](https://github.com/Mahir29Flame/SuperGeM/releases/download/v0.5.4/SuperGeM-0.5.4.exe)
 
-1. Clone this repository:
-```
-git clone https://github.com/Mahir29Flame/SuperGeM.git
-cd SuperGeM
-```
 
-2. Create a virtual environment (Python 3.11 or newer) and install the required packages:
-```
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-```
-   With [uv](https://docs.astral.sh/uv/) this is just `uv venv` followed by `uv pip install -r requirements.txt`.
-
-3. Start the app:
-```
-streamlit run app.py
-```
-   Enter your Gemini API key in the sidebar when the app starts. The key is kept only in the current Streamlit session. For desktop or automated deployments, `GEMINI_API_KEY` or `GOOGLE_API_KEY` can still be set as a fallback. `SERPAPI_API_KEY` is optional; without it the Google Scholar tool is disabled. You can get a Gemini key from [Google AI Studio](https://aistudio.google.com/apikey).
 
 ## Usage
 After installation, you can utilize the Gemini-Pro Agent through its Streamlit web interface. Follow these steps to start interacting with the agent:
