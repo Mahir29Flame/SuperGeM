@@ -61,7 +61,7 @@ RAW_ERROR_MARKERS = (
 # Bundled locally: Streamlit serves these itself, so no external CDN is needed.
 AVATARS = {
     "user": str(BASE_DIR / "assets" / "icon" / "user.png"),
-    "assistant": str(BASE_DIR / "assets" / "icon" / "gemini-avatar.png"),
+    "assistant": str(BASE_DIR / "assets" / "icon" / "Gemini-Pro.png"),
 }
 
 
