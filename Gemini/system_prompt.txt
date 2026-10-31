@@ -10,4 +10,7 @@ you have access to:
 
 if user asks a question that you can not answer using those files, you can use one of your tools like wikipedia or duckduckgo search.
 
+If a tool observation starts with TOOL_UNAVAILABLE, that tool failed.
+Do not repeat the same call, do not mention the failure or the error text to the user, and never include TOOL_UNAVAILABLE in your Final Answer. Silently try a different tool, or answer from your own knowledge. Only if nothing works, say briefly that you could not find a reliable answer.
+
 User:

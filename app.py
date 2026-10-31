@@ -1,4 +1,7 @@
+import logging
 import os
+import socket
+import time
 from pathlib import Path
 
 import streamlit as st
@@ -6,11 +9,54 @@ import streamlit as st
 import langchain_google_genai as genai
 from langchain_classic.agents import initialize_agent
 from langchain_community.agent_toolkits.load_tools import load_tools
+from langchain_core.tools import BaseTool
 
 # from READPDF import ASKPDF
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_NAME = "gemini-3.5-flash-lite"
+
+log = logging.getLogger("supergem")
+
+TOOL_FAILED_PREFIX = "TOOL_UNAVAILABLE"
+FRIENDLY_TOOL_FAILURE = (
+    "I couldn't reach the search sources for that question. "
+    "Please try again in a moment."
+)
+DNS_ERROR_MARKERS = (
+    "gaierror",
+    "nameresolutionerror",
+    "failed to resolve",
+    "getaddrinfo",
+    "name or service not known",
+    "temporary failure in name resolution",
+    "nodename nor servname",
+)
+TRANSIENT_ERROR_MARKERS = (
+    "timeout",
+    "timed out",
+    "connection reset",
+    "connection aborted",
+    "remotedisconnected",
+    "connectionrefused",
+    "econnreset",
+    "502",
+    "503",
+    "504",
+)
+RAW_ERROR_MARKERS = (
+    TOOL_FAILED_PREFIX.lower(),
+    "nameresolutionerror",
+    "max retries exceeded",
+    "getaddrinfo",
+    "failed to resolve",
+    "httpsconnectionpool",
+    "connecttimeout",
+    "connectionerror",
+    "gaierror",
+    "agent stopped due to iteration limit",
+    "agent stopped due to time limit",
+)
 
 # Bundled locally: Streamlit serves these itself, so no external CDN is needed.
 AVATARS = {
@@ -41,6 +87,107 @@ def get_tool_names() -> list[str]:
     return tool_names
 
 
+def _exception_text(exc: BaseException) -> str:
+    """Flatten an exception and its causes into lowercase text."""
+    parts = []
+    seen = set()
+    current = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        parts.append(f"{type(current).__module__}.{type(current).__name__}: {current}")
+        current = current.__cause__ or current.__context__
+    return " | ".join(parts).lower()
+
+
+def _failure_reason(exc: BaseException) -> str:
+    text = _exception_text(exc)
+    if any(marker in text for marker in DNS_ERROR_MARKERS):
+        return "network/DNS lookup failed"
+    if any(marker in text for marker in TRANSIENT_ERROR_MARKERS):
+        return "network timeout"
+    return "unexpected tool error"
+
+
+def _is_transient(exc: BaseException) -> bool:
+    text = _exception_text(exc)
+    if any(marker in text for marker in DNS_ERROR_MARKERS):
+        # A failed name lookup will not succeed on an immediate retry.
+        return False
+    return isinstance(exc, (socket.timeout, TimeoutError)) or any(
+        marker in text for marker in TRANSIENT_ERROR_MARKERS
+    )
+
+
+def _tool_failure_observation(tool_name: str, exc: BaseException) -> str:
+    return (
+        f"{TOOL_FAILED_PREFIX}: {tool_name} failed ({_failure_reason(exc)}). "
+        "Do not retry this tool with the same input and do not show this message "
+        "to the user. Use a different tool or answer from your own knowledge."
+    )
+
+
+class ResilientTool(BaseTool):
+    """Report tool failures as observations instead of crashing the agent."""
+
+    name: str
+    description: str
+    wrapped_tool: BaseTool
+    max_retries: int = 1
+
+    def _run(self, tool_input: str = "") -> str:
+        attempts = self.max_retries + 1
+        for attempt in range(attempts):
+            try:
+                return self.wrapped_tool.run(tool_input)
+            except Exception as exc:
+                if attempt + 1 < attempts and _is_transient(exc):
+                    time.sleep(0.4)
+                    continue
+                log.warning("Tool %s failed: %s", self.name, exc)
+                return _tool_failure_observation(self.name, exc)
+        return _tool_failure_observation(self.name, RuntimeError("unknown error"))
+
+
+def wrap_tools(tools: list[BaseTool]) -> list[BaseTool]:
+    return [
+        ResilientTool(
+            name=tool.name,
+            description=tool.description,
+            wrapped_tool=tool,
+        )
+        for tool in tools
+    ]
+
+
+def sanitize_answer(text: str) -> str:
+    """Keep raw tool/network error text out of the chat."""
+    if not text:
+        return FRIENDLY_TOOL_FAILURE
+    lines = [
+        line for line in text.splitlines()
+        if TOOL_FAILED_PREFIX not in line
+    ]
+    cleaned = "\n".join(lines).strip()
+    if not cleaned or any(marker in cleaned.lower() for marker in RAW_ERROR_MARKERS):
+        return FRIENDLY_TOOL_FAILURE
+    return cleaned
+
+
+def friendly_error(exc: BaseException) -> str:
+    text = _exception_text(exc)
+    if any(
+        marker in text
+        for marker in ("api key", "api_key_invalid", "unauthenticated", "permission denied")
+    ):
+        return "Your Gemini API key was rejected. Check the key in the sidebar and try again."
+    if any(
+        marker in text
+        for marker in ("resource_exhausted", "quota", "rate limit", "429")
+    ):
+        return "The Gemini API rate limit or quota was reached. Wait a moment and try again."
+    return "Something went wrong while contacting the AI service. Please try again."
+
+
 @st.cache_resource(show_spinner="Loading the agent...")
 def get_agent(api_key: str):
     if not api_key:
@@ -55,13 +202,14 @@ def get_agent(api_key: str):
                                    google_api_key=api_key
                                    )
 
-    tools = load_tools(get_tool_names())
+    tools = wrap_tools(load_tools(get_tool_names()))
 
     return initialize_agent(tools, llm,
                             agent="zero-shot-react-description",
                             agent_kwargs={"prefix": load_system_prompt()},
                             verbose=True,
-                            handle_parsing_errors=True)
+                            handle_parsing_errors=True,
+                            max_iterations=6)
 
 
 def build_agent_input(user_input: str, chat_history: list[dict], max_turns: int = 5) -> str:
@@ -77,6 +225,83 @@ def build_agent_input(user_input: str, chat_history: list[dict], max_turns: int 
 def render_message(role: str, text: str) -> None:
     with st.chat_message(role, avatar=AVATARS[role]):
         st.markdown(text)
+
+
+def render_sidebar_hint() -> None:
+    """Point first-time users (especially on phones) at the collapsed sidebar."""
+    st.markdown(
+        """
+        <style>
+        .sg-sidebar-hint {
+            display: none;
+            position: fixed;
+            top: 4.9rem;
+            left: 0.9rem;
+            z-index: 1000000;
+            align-items: flex-start;
+            gap: 0.45rem;
+            max-width: min(20rem, calc(100vw - 2rem));
+            padding: 0.7rem 0.9rem;
+            border-radius: 0.75rem;
+            background: rgba(43, 49, 62, 0.96);
+            border: 1px solid rgba(232, 163, 61, 0.55);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            color: #f5f5f5;
+            font-size: 0.9rem;
+            line-height: 1.35;
+            pointer-events: none;
+        }
+        body:has([data-testid="stExpandSidebarButton"]) .sg-sidebar-hint,
+        body:has([aria-label="Expand sidebar"]) .sg-sidebar-hint {
+            display: flex;
+        }
+        .sg-sidebar-hint strong {
+            display: block;
+            margin-bottom: 0.1rem;
+            color: #f0b75a;
+        }
+        .sg-hint-arrow {
+            flex: 0 0 auto;
+            width: 1.7rem;
+            height: 1.7rem;
+            color: #f0b75a;
+            animation: sg-hint-bob 1.4s ease-in-out infinite;
+        }
+        body:has([data-testid="stExpandSidebarButton"]) [data-testid="stExpandSidebarButton"],
+        body:has([aria-label="Expand sidebar"]) [aria-label="Expand sidebar"] {
+            border-radius: 0.5rem;
+            animation: sg-hint-pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes sg-hint-bob {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-3px, -3px); }
+        }
+        @keyframes sg-hint-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(240, 183, 90, 0); }
+            50% { box-shadow: 0 0 0 4px rgba(240, 183, 90, 0.35); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .sg-hint-arrow,
+            [data-testid="stExpandSidebarButton"],
+            [aria-label="Expand sidebar"] {
+                animation: none !important;
+            }
+        }
+        </style>
+        <div class="sg-sidebar-hint" role="status">
+          <svg class="sg-hint-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 20 L6 6"></path>
+            <path d="M6 13 V6 H13"></path>
+          </svg>
+          <div>
+            <strong>Open the menu</strong>
+            Tap the double-arrow at the top left, then paste your Gemini API key.
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 st.set_page_config(page_title="SuperGeM",
@@ -107,6 +332,9 @@ def main():
         if not api_key:
             st.info("Enter a Gemini API key to enable chat.")
 
+    if not api_key:
+        render_sidebar_hint()
+
     prompt = st.chat_input("Chat with SuperGeM", disabled=not api_key)
 
     for message in st.session_state.chat_history:
@@ -120,19 +348,20 @@ def main():
         st.session_state.chat_history.append({"Human": prompt})
         render_message("user", prompt)
 
-        error = None
+        failed = False
         with st.chat_message("assistant", avatar=AVATARS["assistant"]):
             try:
                 agent = get_agent(api_key)
                 with st.spinner("Thinking..."):
                     agent_response = agent.invoke({"input": agent_input})
-                answer = agent_response["output"]
+                answer = sanitize_answer(agent_response["output"])
             except Exception as e:
-                error = str(e)
-                answer = f"Error: {error}"
+                log.exception("Agent request failed")
+                failed = True
+                answer = friendly_error(e)
 
-            if error:
-                st.error(error)
+            if failed:
+                st.error(answer)
             else:
                 st.markdown(answer)
 
