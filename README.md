@@ -19,10 +19,10 @@ at https://supergem.streamlit.app/
 
 - **Free and OpenSource**
 - **Better Model selection than Gemini**: While using Google models, SuperGeM supports the only default model of the Gemini free tier (Gemini 3.5 Flash-Lite) but also supports a wide vearity of other models where some like **Gemini 3.8 Flash** and **Gemma 4** can surpass the Gemini Free Tier Models by miles.
+- **Multimodality**: Accepts any file you give and analyzes it, whether it's a PDF, TXT, DOCX, or image.
 - **Usable anywhere**: The app is accessible in any device with a browser at https://supergem.streamlit.app/
 - **Dynamic Tool Selection**: The agent autonomously decides the most suitable tool or response for each query, optimizing user experience.
 - **Versatile Search Options**: With integrated search capabilities across DuckDuckGo, Wikipedia, Google Scholar, ArXiv, and PubMed, users can find accurate information across the web and academic journals.
-- **Multimodality**: Accepts any file you give and analyzes it, whether it's a PDF, TXT, DOCX, or image.
 - **Web Interface**: A user-friendly web interface built using the Streamlit library, making it accessible for non-technical users.
 - **Powered by Langchain**: Utilizes the Langchain library for efficient handling of API and LLM calls.
 

@@ -321,6 +321,10 @@ def render_message(role: str, text: str) -> None:
         st.markdown("")
         st.markdown("")
         st.markdown("")
+        st.markdown("")
+        st.markdown("")
+        st.markdown("")
+        st.markdown("")
 
 def render_sidebar_hint() -> None:
     """Point first-time users (especially on phones) at the collapsed sidebar."""
