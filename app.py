@@ -157,6 +157,26 @@ def handle_input(text: str, files: list, api_key: str):
 
     return text, uploaded_files
 
+def ask_gemini_with_files(
+    api_key: str,
+    model_name: str,
+    user_text: str,
+    uploaded_files: list,
+) -> str:
+    client = google_genai.Client(api_key=api_key)
+
+    contents = [user_text]
+
+    for uploaded_file in uploaded_files:
+        contents.append(uploaded_file)
+
+    response = client.models.generate_content(
+        model=model_name,
+        contents=contents,
+    )
+
+    return response.text    
+
 class ResilientTool(BaseTool):
     """Report tool failures as observations instead of crashing the agent."""
 
@@ -430,7 +450,7 @@ def main():
         accept_audio= True,
         disabled=not api_key,
     )
-    
+
     if prompt:
         user_text, uploaded_files = handle_input(
             prompt.text,
@@ -456,7 +476,18 @@ def main():
                 )
 
                 with st.spinner("Thinking..."):
-                    agent_response = agent.invoke({"input": agent_input})
+                    if uploaded_files:
+                        answer = ask_gemini_with_files(
+                            api_key,
+                            MODELS[selected_model],
+                            agent_input,
+                            uploaded_files,
+                        )
+                    else:
+                        agent_response = agent.invoke({"input": agent_input})
+                        answer = agent_response["output"]
+
+                    answer = sanitize_answer(answer)
 
                 answer = sanitize_answer(agent_response["output"])
 
