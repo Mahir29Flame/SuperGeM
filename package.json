@@ -44,6 +44,7 @@
     "desktop": {
       "files": [
         "app.py",
+        "READPDF.py",
         "assets",
         "requirements.txt"
       ],

@@ -1,6 +1,9 @@
+import hashlib
 import logging
+import mimetypes
 import os
 import socket
+import tempfile
 import time
 from pathlib import Path
 
@@ -12,7 +15,7 @@ from langchain_community.agent_toolkits.load_tools import load_tools
 from langchain_core.tools import BaseTool
 from google import genai as google_genai
 
-# from READPDF import ASKPDF
+import READPDF
 
 BASE_DIR = Path(__file__).resolve().parent
 MODELS = {
@@ -136,26 +139,60 @@ def _tool_failure_observation(tool_name: str, exc: BaseException) -> str:
         "to the user. Use a different tool or answer from your own knowledge."
     )
 
-def upload_file(file, api_key: str):
-    client = google_genai.Client(api_key=api_key)
+def _is_rag_file(file) -> bool:
+    return Path(file.name).suffix.lower() in READPDF.SUPPORTED_SUFFIXES
 
-    uploaded_file = client.files.upload(
-        file=file,
-        config={
-            "display_name": file.name
-        }
-    )
 
-    return uploaded_file
-
-def handle_input(text: str, files: list, api_key: str):
-    uploaded_files = []
-
+def stage_uploads(files: list) -> list[tuple[str, str]]:
+    """Write uploads to a content-addressed temp path so the index cache hits."""
+    upload_dir = Path(tempfile.gettempdir()) / "supergem_uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    staged = []
     for file in files:
-        uploaded = upload_file(file, api_key)
-        uploaded_files.append(uploaded)
+        data = file.getvalue()
+        digest = hashlib.sha256(data).hexdigest()[:16]
+        path = upload_dir / f"{digest}{Path(file.name).suffix.lower()}"
+        if not path.exists():
+            path.write_bytes(data)
+        staged.append((str(path), file.name))
+    return staged
 
-    return text, uploaded_files
+
+def document_context(staged: list[tuple[str, str]], question: str, api_key: str) -> str:
+    """Retrieve the most relevant passages from each staged document."""
+    parts = []
+    for path, display_name in staged:
+        passages = READPDF.ask_pdf(path, question, api_key)
+        parts.append(f"[{display_name}]\n{passages}")
+    return "\n\n".join(parts)
+
+
+def _mime_type(file) -> str:
+    """Streamlit uploads are in-memory, so the SDK needs an explicit MIME type."""
+    mime = getattr(file, "type", None)
+    if mime and mime != "application/octet-stream":
+        return mime
+    guessed, _ = mimetypes.guess_type(file.name)
+    if guessed:
+        return guessed
+    if Path(file.name).suffix.lower() in READPDF.TEXT_SUFFIXES:
+        return "text/plain"
+    return "application/octet-stream"
+
+
+def upload_files(files: list, api_key: str) -> list:
+    client = google_genai.Client(api_key=api_key)
+    return [
+        client.files.upload(
+            file=file,
+            config={
+                "display_name": file.name,
+                "mime_type": _mime_type(file),
+            },
+        )
+        for file in files
+    ]
+
 
 def ask_gemini_with_files(
     api_key: str,
@@ -175,7 +212,7 @@ def ask_gemini_with_files(
         contents=contents,
     )
 
-    return response.text    
+    return response.text
 
 class ResilientTool(BaseTool):
     """Report tool failures as observations instead of crashing the agent."""
@@ -273,10 +310,17 @@ def build_agent_input(user_input: str, chat_history: list[dict], max_turns: int 
     return "\n".join(lines)
 
 
+def run_agent(api_key: str, model_name: str, agent_input: str) -> str:
+    agent = get_agent(api_key, model_name)
+    return agent.invoke({"input": agent_input})["output"]
+
+
 def render_message(role: str, text: str) -> None:
     with st.chat_message(role, avatar=AVATARS[role]):
         st.markdown(text)
-
+        st.markdown("")
+        st.markdown("")
+        st.markdown("")
 
 def render_sidebar_hint() -> None:
     """Point first-time users (especially on phones) at the collapsed sidebar."""
@@ -398,6 +442,8 @@ def main():
         if not api_key:
             st.info("Enter a Gemini API key to enable chat.")
 
+        st.markdown("### [Check Usage](https://aistudio.google.com/rate-limit?timeRange=last-1-day)")   
+
     if not api_key:
         render_sidebar_hint()
 
@@ -452,11 +498,8 @@ def main():
     )
 
     if prompt:
-        user_text, uploaded_files = handle_input(
-            prompt.text,
-            prompt.files,
-            api_key
-        )
+        user_text = prompt.text
+        files = prompt.files or []
 
         agent_input = build_agent_input(
             user_text,
@@ -470,41 +513,71 @@ def main():
 
         with st.chat_message("assistant", avatar=AVATARS["assistant"]):
             try:
-                agent = get_agent(
-                    api_key,
-                    MODELS[selected_model],
-                )
-
                 with st.spinner("Thinking..."):
-                    if uploaded_files:
+                    if files and not all(_is_rag_file(f) for f in files):
+                        # Non-document attachments go straight to Gemini until a
+                        # dedicated multimodal identification step exists.
                         answer = ask_gemini_with_files(
                             api_key,
                             MODELS[selected_model],
                             agent_input,
-                            uploaded_files,
+                            upload_files(files, api_key),
                         )
+                    elif files:
+                        try:
+                            context = document_context(
+                                stage_uploads(files),
+                                user_text,
+                                api_key,
+                            )
+                        except READPDF.EmptyDocumentError:
+                            # Scanned/image-only PDFs have no text to index;
+                            # let Gemini read the original file instead.
+                            answer = ask_gemini_with_files(
+                                api_key,
+                                MODELS[selected_model],
+                                agent_input,
+                                upload_files(files, api_key),
+                            )
+                        else:
+                            agent_input = (
+                                "Context retrieved from the user's attached documents:\n"
+                                f"<documents>\n{context}\n</documents>\n\n"
+                                + agent_input
+                            )
+                            answer = run_agent(
+                                api_key,
+                                MODELS[selected_model],
+                                agent_input,
+                            )
                     else:
-                        agent_response = agent.invoke({"input": agent_input})
-                        answer = agent_response["output"]
+                        answer = run_agent(
+                            api_key,
+                            MODELS[selected_model],
+                            agent_input,
+                        )
 
                     answer = sanitize_answer(answer)
-
-                answer = sanitize_answer(agent_response["output"])
 
             except Exception as e:
                 log.exception("Agent request failed")
                 failed = True
                 answer = friendly_error(e)
+                detail = f"{type(e).__name__}: {e}"
+                if api_key:
+                    detail = detail.replace(api_key, "***")
 
             if failed:
                 st.error(answer)
+                with st.expander("Technical details"):
+                    st.code(detail[:1500])
             else:
                 st.markdown(answer)
 
         st.session_state.chat_history.append({"AI": answer})
 
     with st.sidebar:
-        st.markdown("# ℹ️Info")
+        st.markdown("## ℹ️Info")
         # Feature List
         st.markdown("## Features")
         st.markdown("""
