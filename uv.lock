@@ -827,6 +827,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/77/30/b3a6f6a2e00f8153549c2fa345c58ae1ce8e5f3153c2fe0484d444c3abcb/google_search_results-2.4.2.tar.gz", hash = "sha256:603a30ecae2af8e600b22635757a6df275dad4b934f975e67878ccd640b78245", size = 18818, upload-time = "2023-03-10T11:13:09.953Z" }
 
 [[package]]
+name = "groq"
+version = "1.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0c/c1/20cb719bc21aa22df185c4aa60abc17680d7067d41fe0ca3fda98b75822b/groq-1.7.0.tar.gz", hash = "sha256:d582dbb3f071b92ca339baba83af9f57ba6f46a51c34b04565d7cb9badb2785b", size = 158918, upload-time = "2026-08-26T02:36:19.734Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/f6/c3d8ea3194d7d7d8292edd4dbb4b6832d29c2eab04887dda4a742e83902c/groq-1.7.0-py3-none-any.whl", hash = "sha256:cb1518f823423d4e52445859eb7d2918a927794cec12f8d5e50d9161e3690fc8", size = 143797, upload-time = "2026-08-26T02:36:18.497Z" },
+]
+
+[[package]]
 name = "h11"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -853,8 +870,8 @@ name = "httpcore2"
 version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "h11" },
-    { name = "truststore" },
+    { name = "h11", marker = "sys_platform != 'emscripten'" },
+    { name = "truststore", marker = "sys_platform != 'emscripten'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c0/61/afa9d6b7452f9eca73f73d45324eb0bb52f098fd5e6049bf6b8263be9b4e/httpcore2-2.16.0.tar.gz", hash = "sha256:c72cd0413563b17e1cd8354677dff887466f8ec2551679759e93126534428643", size = 69886, upload-time = "2026-10-21T07:09:45.31Z" }
 wheels = [
@@ -3111,7 +3128,7 @@ wheels = [
 
 [[package]]
 name = "supergem"
-version = "0.5.7"
+version = "0.6.0"
 source = { virtual = "." }
 dependencies = [
     { name = "arxiv" },
@@ -3129,6 +3146,7 @@ dependencies = [
     { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pymupdf" },
     { name = "streamlit" },
+    { name = "transcribenpy" },
     { name = "wikipedia" },
     { name = "xmltodict" },
 ]
@@ -3149,6 +3167,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2" },
     { name = "pymupdf", specifier = "==2.0" },
     { name = "streamlit", specifier = "==1.66.0" },
+    { name = "transcribenpy", specifier = ">=1.0.5" },
     { name = "wikipedia" },
     { name = "xmltodict" },
 ]
@@ -3169,6 +3188,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/47/c6/ee486fd809e357697ee8a44d3d69222b344920433d3b6666ccd9b374630c/tenacity-9.1.4.tar.gz", hash = "sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a", size = 49413, upload-time = "2026-02-07T10:45:33.841Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/c1/eb8f9debc45d3b7918a32ab756658a0904732f75e555402972246b0b8e71/tenacity-9.1.4-py3-none-any.whl", hash = "sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55", size = 28926, upload-time = "2026-02-07T10:45:32.24Z" },
+]
+
+[[package]]
+name = "transcribenpy"
+version = "1.0.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "groq" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6d/8a/3178320a9db8380ef4932cfd2acfaf8931c907c8906e88bf68cb9bdec379/transcribenpy-1.0.5.tar.gz", hash = "sha256:ebfa032727485976056fe811d4f666d901f328df9b83b250d7ce09ac517ce2f6", size = 14896, upload-time = "2026-10-25T11:54:28.444Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7b/93/3325c15da7c834e5647be15132411db09e2946ea319720ee9d7f40dc468e/transcribenpy-1.0.5-py3-none-any.whl", hash = "sha256:3f28a57b32d3c3536e46e7ba3b61604c368ec11628556033f6bdac58eed526ce", size = 15041, upload-time = "2026-10-25T11:54:29.515Z" },
 ]
 
 [[package]]

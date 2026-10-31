@@ -14,7 +14,17 @@ from langchain_core.tools import BaseTool
 # from READPDF import ASKPDF
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_NAME = "gemini-3.5-flash-lite"
+MODELS = {
+    "Gemini 3.5 Flash Lite": "gemini-3.5-flash-lite",
+    "Gemini 3.1 Flash Lite": "gemini-3.1-flash-lite",
+    "Gemini 3 Flash": "gemini-3-flash",
+    "Gemini 3.6 Flash": "gemini-3.5-flash",
+    "Gemini 3.8 Flash": "gemini-3.8-flash",
+    "Gemma 4 31B": "gemma-4-31b-it",
+    "Gemma 4 26B": "gemma-4-26b-a4b-it",
+}
+
+DEFAULT_MODEL = "Gemini 3.5 Flash Lite"
 
 log = logging.getLogger("supergem")
 
@@ -189,14 +199,14 @@ def friendly_error(exc: BaseException) -> str:
 
 
 @st.cache_resource(show_spinner="Loading the agent...")
-def get_agent(api_key: str):
+def get_agent(api_key: str, model_name: str):
     if not api_key:
         raise RuntimeError(
             "Enter a Gemini API key in the sidebar. Get one from "
             "https://aistudio.google.com/apikey."
         )
 
-    llm = genai.GoogleGenerativeAI(model=MODEL_NAME,
+    llm = genai.GoogleGenerativeAI(model=model_name,
                                    verbose=True,  # to see what the Agent is thinking
                                    temperature=0.3,  # less creativity
                                    google_api_key=api_key
@@ -313,6 +323,21 @@ st.header(
     divider= "blue",
     )
 
+st.markdown(
+    """
+    <style>
+    div[data-testid="stSelectbox"] {
+        max-width: 240px;
+    }
+
+    div[data-testid="stSelectbox"] label {
+        display: none;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)    
+
 def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
@@ -335,7 +360,6 @@ def main():
     if not api_key:
         render_sidebar_hint()
 
-    prompt = st.chat_input("Chat with SuperGeM", disabled=not api_key)
 
     for message in st.session_state.chat_history:
         if "Human" in message:
@@ -343,7 +367,50 @@ def main():
         elif "AI" in message:
             render_message("assistant", message["AI"])
 
+    st.markdown(
+        """
+        <style>
+        /* Move the chat input up slightly */
+        div[data-testid="stChatInput"] {
+            bottom: 3.8rem !important;
+        }
+
+        /* Pin the model selector to the bottom-left */
+        .st-key-model_selector {
+            position: fixed !important;
+            bottom: 5rem !important;
+            left: max(calc((100vw - 43rem) / 2), 1rem) !important;
+            width: 240px !important;
+            z-index: 1000 !important;
+        }
+
+        /* Keep the selector compact */
+        .st-key-model_selector div[data-testid="stSelectbox"] {
+            width: 100%;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    
+    selected_model = st.selectbox(
+        "Model",
+        options=list(MODELS.keys()),
+        index=list(MODELS.keys()).index(DEFAULT_MODEL),
+        key="model_selector",
+        disabled=not api_key,
+        label_visibility="collapsed",
+    )
+
+    prompt = st.chat_input(
+        "Chat with SuperGeM",
+        accept_file= True,
+        accept_audio= True,
+        disabled=not api_key,
+    )
+
     if prompt:
+        prompt = prompt.text
         agent_input = build_agent_input(prompt, st.session_state.chat_history)
         st.session_state.chat_history.append({"Human": prompt})
         render_message("user", prompt)
@@ -351,7 +418,10 @@ def main():
         failed = False
         with st.chat_message("assistant", avatar=AVATARS["assistant"]):
             try:
-                agent = get_agent(api_key)
+                agent = get_agent(
+                    api_key,
+                    MODELS[selected_model],
+                )
                 with st.spinner("Thinking..."):
                     agent_response = agent.invoke({"input": agent_input})
                 answer = sanitize_answer(agent_response["output"])
