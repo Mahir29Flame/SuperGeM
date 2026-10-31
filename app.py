@@ -10,6 +10,7 @@ import langchain_google_genai as genai
 from langchain_classic.agents import initialize_agent
 from langchain_community.agent_toolkits.load_tools import load_tools
 from langchain_core.tools import BaseTool
+from google import genai as google_genai
 
 # from READPDF import ASKPDF
 
@@ -135,6 +136,26 @@ def _tool_failure_observation(tool_name: str, exc: BaseException) -> str:
         "to the user. Use a different tool or answer from your own knowledge."
     )
 
+def upload_file(file, api_key: str):
+    client = google_genai.Client(api_key=api_key)
+
+    uploaded_file = client.files.upload(
+        file=file,
+        config={
+            "display_name": file.name
+        }
+    )
+
+    return uploaded_file
+
+def handle_input(text: str, files: list, api_key: str):
+    uploaded_files = []
+
+    for file in files:
+        uploaded = upload_file(file, api_key)
+        uploaded_files.append(uploaded)
+
+    return text, uploaded_files
 
 class ResilientTool(BaseTool):
     """Report tool failures as observations instead of crashing the agent."""
@@ -405,26 +426,40 @@ def main():
     prompt = st.chat_input(
         "Chat with SuperGeM",
         accept_file= True,
+        max_upload_size= 1024,
         accept_audio= True,
         disabled=not api_key,
     )
-
+    
     if prompt:
-        prompt = prompt.text
-        agent_input = build_agent_input(prompt, st.session_state.chat_history)
-        st.session_state.chat_history.append({"Human": prompt})
-        render_message("user", prompt)
+        user_text, uploaded_files = handle_input(
+            prompt.text,
+            prompt.files,
+            api_key
+        )
+
+        agent_input = build_agent_input(
+            user_text,
+            st.session_state.chat_history
+        )
+
+        st.session_state.chat_history.append({"Human": user_text})
+        render_message("user", user_text)
 
         failed = False
+
         with st.chat_message("assistant", avatar=AVATARS["assistant"]):
             try:
                 agent = get_agent(
                     api_key,
                     MODELS[selected_model],
                 )
+
                 with st.spinner("Thinking..."):
                     agent_response = agent.invoke({"input": agent_input})
+
                 answer = sanitize_answer(agent_response["output"])
+
             except Exception as e:
                 log.exception("Agent request failed")
                 failed = True
