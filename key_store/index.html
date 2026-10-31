@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SuperGeM key store</title>
+    <script>
+      const STORAGE_KEY = "supergem_api_key";
+      let connected = false;
+      let attempts = 0;
+
+      function send(type, payload) {
+        window.parent.postMessage(
+          Object.assign({ isStreamlitMessage: true, type: type }, payload),
+          "*"
+        );
+      }
+
+      function readKey() {
+        try {
+          return window.localStorage.getItem(STORAGE_KEY) || "";
+        } catch (err) {
+          return "";
+        }
+      }
+
+      function apply(args) {
+        try {
+          if (args.action === "set" && typeof args.value === "string" && args.value) {
+            window.localStorage.setItem(STORAGE_KEY, args.value);
+          } else if (args.action === "clear") {
+            window.localStorage.removeItem(STORAGE_KEY);
+          }
+        } catch (err) {
+          // Storage can be unavailable (e.g. blocked by the browser);
+          // the key still works for the current session in that case.
+        }
+      }
+
+      window.addEventListener("message", function (event) {
+        const data = event.data || {};
+        if (data.type !== "streamlit:render") return;
+        connected = true;
+        apply(data.args || {});
+        send("streamlit:setComponentValue", { value: readKey(), dataType: "json" });
+      });
+
+      // The parent may register its listener after this tiny page loads,
+      // so keep announcing until it answers with a render message.
+      function announce() {
+        if (connected) return;
+        send("streamlit:componentReady", { apiVersion: 1 });
+        if (attempts++ < 40) window.setTimeout(announce, 250);
+      }
+
+      announce();
+    </script>
+  </head>
+  <body></body>
+</html>

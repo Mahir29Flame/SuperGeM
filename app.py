@@ -6,7 +6,6 @@ import socket
 import tempfile
 import time
 from pathlib import Path
-from urllib.parse import quote, unquote
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -429,40 +428,20 @@ st.markdown(
     unsafe_allow_html=True,
 )    
 
-KEY_COOKIE = "supergem_api_key"
+KEY_STORE_DIR = BASE_DIR / "key_store"
+key_store = components.declare_component("supergem_key_store", path=KEY_STORE_DIR)
 
 
-def load_saved_key() -> str:
-    """Read the API key this browser saved in a first-party cookie."""
-    try:
-        value = st.context.cookies.get(KEY_COOKIE, "")
-    except Exception:
-        return ""
-    if not isinstance(value, str):
-        return ""
-    return unquote(value) if value else ""
+def stored_api_key(action: str = "get", value: str = ""):
+    """Read or update the key saved in this browser's localStorage.
 
-
-def save_key_cookie(value: str) -> None:
-    # Same-origin iframe, so this writes the cookie for the app's origin.
-    payload = quote(value, safe="")
-    components.html(
-        f"""<script>
-        document.cookie = "{KEY_COOKIE}={payload}; path=/; max-age=31536000; SameSite=Lax" +
-          (location.protocol === "https:" ? "; Secure" : "");
-        </script>""",
-        height=0,
-    )
-
-
-def forget_key_cookie() -> None:
-    components.html(
-        f"""<script>
-        document.cookie = "{KEY_COOKIE}=; path=/; max-age=0; SameSite=Lax" +
-          (location.protocol === "https:" ? "; Secure" : "");
-        </script>""",
-        height=0,
-    )
+    Returns None until the component has reported, "" when nothing is saved.
+    Cookies are deliberately avoided: on Streamlit Community Cloud the browser
+    cookie never reaches ``st.context.cookies``, so the key has to live
+    client-side and be read back over the component channel.
+    """
+    result = key_store(action=action, value=value, default=None, key="key_store")
+    return result if isinstance(result, str) else None
 
 
 def main():
@@ -470,15 +449,32 @@ def main():
         st.session_state.chat_history = []
 
     clear_saved = st.session_state.pop("clear_saved_key", False)
-    saved_key = "" if clear_saved else load_saved_key()
+    typed_value = st.session_state.get("api_key_input")
+    typed_value = typed_value.strip() if isinstance(typed_value, str) else ""
+
     if clear_saved:
+        stored_api_key(action="clear")
         st.session_state.api_key_input = ""
-        # Render on this run so the delete script is not torn down by a rerun.
-        forget_key_cookie()
-    elif "api_key_input" not in st.session_state:
-        st.session_state.api_key_input = saved_key
-    if saved_key:
-        st.session_state.saved_key = saved_key
+        st.session_state.pop("saved_key", None)
+        st.session_state.pop("awaiting_saved_key", None)
+    else:
+        needs_save = typed_value and typed_value != st.session_state.get("saved_key")
+        stored = stored_api_key(action="set" if needs_save else "get", value=typed_value)
+        if needs_save:
+            # Only keys typed by the visitor are persisted, never env-var keys.
+            st.session_state.saved_key = typed_value
+        elif stored is None:
+            # First run: the component has not reported yet. It triggers a
+            # rerun as soon as it has read localStorage.
+            if "api_key_input" not in st.session_state:
+                st.session_state.api_key_input = ""
+                st.session_state.awaiting_saved_key = True
+        elif stored:
+            if st.session_state.pop("awaiting_saved_key", False) or "api_key_input" not in st.session_state:
+                st.session_state.api_key_input = stored
+            st.session_state.saved_key = stored
+        else:
+            st.session_state.pop("awaiting_saved_key", None)
 
     with st.sidebar:
         st.markdown("## API access")
@@ -493,11 +489,6 @@ def main():
             api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
         api_key = api_key.strip()
         st.caption("Get a key from [Google AI Studio](https://aistudio.google.com/apikey).")
-
-        # Never persist the server's env-var key into a visitor's browser.
-        if typed_key and typed_key != st.session_state.get("saved_key"):
-            save_key_cookie(typed_key)
-            st.session_state.saved_key = typed_key
 
         if st.session_state.get("saved_key"):
             st.caption("Saved in this browser")

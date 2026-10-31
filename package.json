@@ -45,6 +45,7 @@
       "files": [
         "app.py",
         "READPDF.py",
+        "key_store",
         "assets",
         "requirements.txt"
       ],
