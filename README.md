@@ -46,7 +46,7 @@ This will start the web interface, where you can interact with the agent directl
 
 The Gemini-Pro Agent uses the Langchain library to manage API and LLM calls, enabling it to interpret queries, decide the most appropriate tool or answer, and fetch data from various sources. The agent's decision-making process and language understanding capabilities are powered by Google's Gemini-pro LLM, ensuring high-quality responses.
 
-## Resources used in the project(by [g-hano](https://github.com/g-hano/Smarty-Gemini)
+## Resources used in the project(by [g-hano](https://github.com/g-hano/Smarty-Gemini))
 
 - all html-css codes are belong to [alejandro-ao](https://github.com/alejandro-ao/ask-multiple-pdfs/tree/main)
 
