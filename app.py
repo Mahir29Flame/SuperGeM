@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent
 MODELS = {
     "Gemini 3.5 Flash Lite": "gemini-3.5-flash-lite",
     "Gemini 3.1 Flash Lite": "gemini-3.1-flash-lite",
-    "Gemini 3 Flash": "gemini-3-flash",
+    "Gemini 3 Flash": "gemini-3-flash-preview",
     "Gemini 3.6 Flash": "gemini-3.5-flash",
     "Gemini 3.8 Flash": "gemini-3.8-flash",
     "Gemma 4 31B": "gemma-4-31b-it",
