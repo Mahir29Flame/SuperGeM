@@ -384,7 +384,7 @@ def main():
             st.image(str(BASE_DIR / "assets" / "linkedin.png"), width=30)
         with col2:
             st.markdown(
-                "[Linkedin](https://www.linkedin.com/in/chanyalcin/)",
+                "[Linkedin](https://www.linkedin.com/in/njm29)",
                 unsafe_allow_html=True,
             )
 
@@ -394,7 +394,7 @@ def main():
             st.image(str(BASE_DIR / "assets" / "github-sign.png"), width=30)
         with col2:
             st.markdown(
-                "[Github](https://github.com/g-hano)",
+                "[Github](https://github.com/Mahir29Flame)",
                 unsafe_allow_html=True,
             )
 
