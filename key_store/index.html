@@ -40,8 +40,15 @@
         const data = event.data || {};
         if (data.type !== "streamlit:render") return;
         connected = true;
+        const prevKey = readKey();
         apply(data.args || {});
-        send("streamlit:setComponentValue", { value: readKey(), dataType: "json" });
+        const currentKey = readKey();
+        // Only notify Streamlit if the key value actually changed
+        // to avoid triggering an unwanted rerun when sending messages.
+        if (prevKey !== currentKey || !window.__initialized) {
+          window.__initialized = true;
+          send("streamlit:setComponentValue", { value: currentKey, dataType: "json" });
+        }
       });
 
       // The parent may register its listener after this tiny page loads,

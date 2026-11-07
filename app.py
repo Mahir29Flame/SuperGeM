@@ -416,10 +416,6 @@ st.markdown(
     div[data-testid="stSelectbox"] label {
         display: none;
     }
-    /* Add gap under only bot's messages (approx. 6-8 lines / ~7-8rem) */
-    div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
-        margin-bottom: 15rem !important;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -512,9 +508,19 @@ def main():
     st.markdown(
         """
         <style>
+        /* Allow page to scroll well past the floating input box so nothing gets hidden */
+        .main .block-container {
+            padding-bottom: 14rem !important;
+        }
+
         /* Move the chat input up slightly */
         div[data-testid="stChatInput"] {
             bottom: 3.8rem !important;
+        }
+
+        /* Gap under ONLY the bot's messages (equivalent to ~6-8 lines) */
+        div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+            margin-bottom: 7rem !important;
         }
 
         /* Pin the model selector to the bottom-left */
