@@ -510,7 +510,7 @@ def main():
         <style>
         /* Allow page to scroll well past the floating input box so nothing gets hidden */
         .main .block-container {
-            padding-bottom: 14rem !important;
+            padding-bottom: 24rem !important;
         }
 
         /* Move the chat input up slightly */
