@@ -319,13 +319,6 @@ def run_agent(api_key: str, model_name: str, agent_input: str) -> str:
 def render_message(role: str, text: str) -> None:
     with st.chat_message(role, avatar=AVATARS[role]):
         st.markdown(text)
-        st.markdown("")
-        st.markdown("")
-        st.markdown("")
-        st.markdown("")
-        st.markdown("")
-        st.markdown("")
-        st.markdown("")
 
 def render_sidebar_hint() -> None:
     """Point first-time users (especially on phones) at the collapsed sidebar."""
@@ -422,6 +415,10 @@ st.markdown(
 
     div[data-testid="stSelectbox"] label {
         display: none;
+    }
+    /* Add gap under only bot's messages (approx. 6-8 lines / ~7-8rem) */
+    div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+        margin-bottom: 7rem !important;
     }
     </style>
     """,
