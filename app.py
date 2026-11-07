@@ -441,6 +441,50 @@ def main():
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
+    st.markdown(
+        """
+        <style>
+        /* Ensure the main scrollable view has enough space at the bottom */
+        [data-testid="stMainBlockContainer"],
+        .stMainBlockContainer,
+        .block-container,
+        .main .block-container {
+            padding-bottom: 10rem !important;
+        }
+
+        /* Move the chat input up slightly */
+        div[data-testid="stChatInput"] {
+            bottom: 1.2rem !important;
+        }
+
+        /* Gap under ONLY the bot's messages (adjust this to change the bot spacing) */
+        div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+            margin-bottom: 3.5rem !important;
+        }
+
+        /* User messages keep tight, normal spacing */
+        div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+            margin-bottom: 0.8rem !important;
+        }
+
+        /* Pin the model selector to the bottom-left */
+        .st-key-model_selector {
+            position: fixed !important;
+            bottom: 2rem !important;
+            left: max(calc((100vw - 43rem) / 2), 1rem) !important;
+            width: 240px !important;
+            z-index: 1000 !important;
+        }
+
+        /* Keep the selector compact */
+        .st-key-model_selector div[data-testid="stSelectbox"] {
+            width: 100%;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     clear_saved = st.session_state.pop("clear_saved_key", False)
     typed_value = st.session_state.get("api_key_input")
     typed_value = typed_value.strip() if isinstance(typed_value, str) else ""
@@ -463,7 +507,7 @@ def main():
                 st.session_state.api_key_input = ""
                 st.session_state.awaiting_saved_key = True
         elif stored:
-            if st.session_state.pop("awaiting_saved_key", False) or "api_key_input" not in st.session_state:
+            if (st.session_state.pop("awaiting_saved_key", False) or not st.session_state.get("api_key_input")) and st.session_state.get("api_key_input") != stored:
                 st.session_state.api_key_input = stored
             st.session_state.saved_key = stored
         else:
@@ -505,42 +549,6 @@ def main():
         elif "AI" in message:
             render_message("assistant", message["AI"])
 
-    st.markdown(
-        """
-        <style>
-        /* Allow page to scroll well past the floating input box so nothing gets hidden */
-        .main .block-container {
-            padding-bottom: 100rem !important;
-        }
-
-        /* Move the chat input up slightly */
-        div[data-testid="stChatInput"] {
-            bottom: 3.8rem !important;
-        }
-
-        /* Gap under ONLY the bot's messages (equivalent to ~6-8 lines) */
-        div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
-            margin-bottom: 7rem !important;
-        }
-
-        /* Pin the model selector to the bottom-left */
-        .st-key-model_selector {
-            position: fixed !important;
-            bottom: 5rem !important;
-            left: max(calc((100vw - 43rem) / 2), 1rem) !important;
-            width: 240px !important;
-            z-index: 1000 !important;
-        }
-
-        /* Keep the selector compact */
-        .st-key-model_selector div[data-testid="stSelectbox"] {
-            width: 100%;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-    
     selected_model = st.selectbox(
         "Model",
         options=list(MODELS.keys()),
