@@ -416,10 +416,6 @@ st.markdown(
     div[data-testid="stSelectbox"] label {
         display: none;
     }
-    /* Add gap under only bot's messages (approx. 6-8 lines / ~7-8rem) */
-    div[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
-        margin-bottom: 15rem !important;
-    }
     </style>
     """,
     unsafe_allow_html=True,
